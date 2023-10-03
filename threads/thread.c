@@ -27,7 +27,6 @@
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
-
 static struct list sleep_list;
 
 /* Idle thread. */
@@ -162,16 +161,16 @@ void thread_sleep(int64_t sleep_tick){
 	struct thread *cur_t = thread_current();
 	enum intr_level level = intr_disable();
 	cur_t->wake_up_tick = sleep_tick;
-	list_insert_ordered(&sleep_list,&cur_t->elem,order_by_tick,NULL);
+	list_insert_ordered(&sleep_list, &cur_t->elem, order_by_tick, NULL);
 	thread_block();
 	intr_set_level(level);
 }
 
-bool order_by_tick(struct list_elem *a,struct list_elem *b, void *aux){
+bool order_by_tick(struct list_elem *a, struct list_elem *b, void *aux){
 	return get_thread(a)->wake_up_tick < get_thread(b)->wake_up_tick;
 }
 
-bool order_by_priority(struct list_elem *a,struct list_elem *b, void *aux){
+bool order_by_priority(struct list_elem *a, struct list_elem *b, void *aux){
 	return get_thread(a)->priority > get_thread(b)->priority;
 }
 
@@ -350,7 +349,7 @@ thread_yield (void) {
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
-		list_insert_ordered (&ready_list, &curr->elem,order_by_priority,NULL);
+		list_insert_ordered (&ready_list, &curr->elem, order_by_priority, NULL);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -365,7 +364,7 @@ thread_set_priority (int new_priority) {
 	cmp_priority();
 }
 
-void cmp_priority(){
+void cmp_priority(void){
 	struct thread *cur_t = thread_current();
 	struct thread *max_t = get_thread(list_begin(&ready_list));
 
@@ -378,12 +377,12 @@ void cmp_priority(){
 /* thread/thread.c */
 void refresh_priority (void)
 {
-	struct thread *cur = thread_current();
-	if(!list_empty(&cur->donations)){
-		struct list_elem *max_elem = list_front(&cur->donations);
+	struct thread *cur_t = thread_current();
+	if(!list_empty(&cur_t->donations)){
+		struct list_elem *max_elem = list_front(&cur_t->donations);
 		struct thread *max_thread = list_entry(max_elem, struct thread, d_elem);
-		if(cur->priority < max_thread->priority)
-			cur->priority = max_thread->priority;
+		if(cur_t->priority < max_thread->priority)
+			cur_t->priority = max_thread->priority;
 	}
 }
 
@@ -485,7 +484,11 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	t->org_priority = priority;
 	t->magic = THREAD_MAGIC;
+
+	lock_init(&t->wait_on_lock);
+	list_init(&t->donations);
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

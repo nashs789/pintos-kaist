@@ -95,10 +95,10 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
-	int64_t wake_up_tick;				/* Tick wake time*/
-	struct lock *wait_on_lock;			/* 내가 얻고자 하는 lock 정보*/
-	struct list donations;				/* 나에게 기부 한 애들 리스트*/
-	struct list_elem d_elem;			/* 내가 기부 한 쓰레드*/
+	int64_t wake_up_tick;				/* Tick wake time */
+	struct lock *wait_on_lock;			/* 내가 얻고자 하는 lock 정보 */
+	struct list donations;				/* 나에게 기부 한 애들 리스트 */
+	struct list_elem d_elem;
 	int org_priority;					/* 도네이트 받기 전 원래 우선순위 */
 
 
@@ -147,13 +147,14 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
 void thread_sleep(int64_t sleep_tick);
 void thread_wake_up(int64_t cur_tick);
-bool order_by_tick(struct list_elem *a,struct list_elem *b, void *aux);
+bool order_by_tick(struct list_elem *a, struct list_elem *b, void *aux);
 struct thread *get_thread(struct list_elem *e);
-bool order_by_priority(struct list_elem *a,struct list_elem *b, void *aux);
+bool order_by_priority(struct list_elem *a, struct list_elem *b, void *aux);
 bool order_by_priority_donation (const struct list_elem *a, const struct list_elem *b, void *aux);
-void cmp_priority();
+void cmp_priority(void);
 void refresh_priority (void);
 
 void do_iret (struct intr_frame *tf);

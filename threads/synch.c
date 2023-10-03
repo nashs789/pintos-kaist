@@ -193,8 +193,10 @@ lock_acquire (struct lock *lock) {
 	struct list_elem *e;
 	int count = 0;
 
+	struct thread *cur_t = thread_current();
+
 	if(lock->holder != NULL){ // lock->holder가 NULL이 아닐 때
-		thread_current()->wait_on_lock = lock; 
+		cur_t->wait_on_lock = lock; 
 		//스레드 T1 이 lock A 를 얻으려고 왔는데, 그 A는 이미 lock holder가 있었고, 그 lock holder는 락 B도 hold 하고 있는 상태다.
 		// 이 때, 그 lock holder의 donation list에는 락 A의 우선순위 최대값과 락 B의 우선순위 최대값이 들어있다.
 		// 만약 T1이 lock A의 우선순위 중 최고라면, lock holder의 donation list의 A에 대한 우선순위 max값을 갱신해야 한다. 아래는 이를 위한 코드다.
@@ -202,9 +204,9 @@ lock_acquire (struct lock *lock) {
 			struct thread *e_thread = list_entry(e,struct thread, d_elem);
 			if(e_thread->wait_on_lock == lock){
 				count++;
-				if(e_thread->priority < thread_current()->priority){
+				if(e_thread->priority < cur_t->priority){
 					list_remove(e);
-					list_insert_ordered(&lock->holder->donations, &thread_current()->d_elem, order_by_priority_donation, 0); // lock holders의 donations에 current thread 추가
+					list_insert_ordered(&lock->holder->donations, &cur_t->d_elem, order_by_priority_donation, 0); // lock holders의 donations에 current thread 추가
 					break;
 				}
 				else {
@@ -213,9 +215,9 @@ lock_acquire (struct lock *lock) {
 			}
 		}
 		if(count == 0){
-			list_insert_ordered(&lock->holder->donations, &thread_current()->d_elem, order_by_priority_donation, 0); // lock holders의 donations에 current thread 추가
+			list_insert_ordered(&lock->holder->donations, &cur_t->d_elem, order_by_priority_donation, 0); // lock holders의 donations에 current thread 추가
 		}
-		cmp_priority_lock_aquire(lock, thread_current());
+		cmp_priority_lock_aquire(lock, cur_t);
 	}
 
 	sema_down (&lock->semaphore);
