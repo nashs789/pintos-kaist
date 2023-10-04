@@ -365,12 +365,21 @@ thread_set_priority (int new_priority) {
 }
 
 void cmp_priority(void){
+	if(list_empty(&ready_list))
+		return;
+		
 	struct thread *cur_t = thread_current();
 	struct thread *max_t = get_thread(list_begin(&ready_list));
 
-	if(max_t->priority > cur_t->priority){
+	if(!intr_context() && max_t->priority > cur_t->priority){ // 외부 인터럽트 컨텍스트가 아닌것을 확실시
 		thread_yield();
 	}
+	/*
+	external interrupt가 processing 중에는 다른 작업들이 이뤄져서는 안 된다. 
+	예를 들어, external interrupt가 진행 중에는 interrupts가 disable되게 되는데, 
+	이때 thread_yield 같은 상황이 발생하면, context switching이 강제로 일어나면서 
+	interrupts가 영영 다시 안 켜지게 될 수 있다.
+	*/
 }
 
 

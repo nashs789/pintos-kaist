@@ -101,8 +101,7 @@ struct thread {
 	struct list_elem d_elem;
 	int org_priority;					/* 도네이트 받기 전 원래 우선순위 */
 
-
-#ifdef USERPROGs
+#ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
 #endif
