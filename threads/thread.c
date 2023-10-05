@@ -197,7 +197,6 @@ void thread_wake_up(int64_t cur_tick){
 	
 }
 
-
 /* Prints thread statistics. */
 void
 thread_print_stats (void) {
@@ -250,8 +249,8 @@ thread_create (const char *name, int priority,
 
 	/* Add to run queue. */
 	thread_unblock (t);
-
-	cmp_priority();
+	thread_yield();
+	//cmp_priority();
 
 	return tid;
 }
