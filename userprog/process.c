@@ -164,7 +164,6 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
-	char *nxt_ptr;
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -178,7 +177,6 @@ process_exec (void *f_name) {
 	process_cleanup ();
 
 	/* And then load the binary */
-	file_name = strtok_r(file_name, SPACE, &nxt_ptr);
 	success = load (file_name, &_if);
 
 	ASSERT (success);
@@ -207,6 +205,9 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+
+	// while(1)
+		thread_sleep(100);
 	return -1;
 }
 
@@ -332,6 +333,15 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+  	char *argv[64];
+	char *token, *save_ptr;
+
+	int argc = 0; 
+	for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
+		argv[argc++] = token;
+
+	file_name = argv[0];
+
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
@@ -419,6 +429,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	argument_stack(argv,argc,if_);
 
 	success = true;
 
@@ -427,6 +438,75 @@ done:
 	file_close (file);
 	return success;
 }
+
+// void argument_stack(char **argv, int argc, struct intr_frame *if_) {
+//     char *addr[argc];
+
+//     // Step 1: Push argument strings and create pointers in reverse order
+//     for (int i = argc - 1; i >= 0; i--) {
+//         int arglen = strlen(argv[i]);
+//         if_->rsp = if_->rsp - (arglen + 1); // Move stack pointer down
+//         memcpy(if_->rsp, argv[i], arglen + 1); // Copy argument string
+//         addr[i] = (char *)if_->rsp; // Save pointer to the argument string
+//     }
+
+//     // Align the stack pointer to 8-byte boundary
+//     while (if_->rsp % 8 != 0)
+//         if_->rsp--;
+
+//     // Step 2: Push pointers to argument strings and argc
+//     for (int i = argc; i >= 0; i--) {
+//         if_->rsp = if_->rsp - 8; // Move stack pointer down by 8 bytes
+//         if (i == argc) {
+//             memset(if_->rsp, 0, sizeof(char **)); // Push a null pointer for argv[argc]
+//         } else {
+//             memcpy(if_->rsp, &addr[i], sizeof(char **)); // Push a pointer to the argument string
+//         }
+//     }
+
+//     // Push argc and argv (pointer to argv[0])
+//     if_->rsp = if_->rsp - 8; // Move stack pointer down by 8 bytes
+//     if_->R.rdi = argc; // Set argc
+//     if_->R.rsi = (uint64_t)if_->rsp + 8; // Set argv (pointer to argv[0])
+
+//     // Optional: Print the content of the user stack
+//     hex_dump((uintptr_t)if_->rsp, if_->rsp, USER_STACK - (uintptr_t)if_->rsp, true);
+// }
+
+void argument_stack(char **argv ,int argc ,struct intr_frame *if_){
+	char * addr[argc];
+
+	for(int i = argc-1; i >=0; i--){
+		int arglen = strlen(argv[i]);
+		if_->rsp = if_->rsp - (arglen+1);
+		memcpy(if_->rsp,argv[i],arglen+1); //
+		addr[i] = (char*)if_->rsp;	
+	}
+	
+	while(if_->rsp % 8 != 0)
+		if_->rsp--;
+	memset(&if_->rsp,0,1);
+
+	for(int i = argc; i >=0; i--){
+		if_->rsp = if_->rsp - 8;
+		if(i == argc){
+			memset(if_->rsp,0,sizeof(char**));
+		}
+		else{
+			memcpy(if_->rsp,&addr[i],sizeof(char**)); //
+		}
+	}
+
+
+	if_->rsp = if_->rsp - 8;
+	memset(if_->rsp,0,sizeof(char**));
+
+	if_->R.rdi = argc;
+	if_->R.rsi = if_->rsp + 8; //
+
+	hex_dump((uintptr_t)if_->rsp, if_->rsp, USER_STACK - (uintptr_t)if_->rsp, true);
+}
+
 
 
 /* Checks whether PHDR describes a valid, loadable segment in

@@ -155,7 +155,6 @@ bool order_by_priority(struct list_elem *a, struct list_elem *b, void *aux);
 bool order_by_priority_donation (const struct list_elem *a, const struct list_elem *b, void *aux);
 void cmp_priority(void);
 void refresh_priority (void);
-bool cmp_priority1 (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) ;
 
 void do_iret (struct intr_frame *tf);
 
