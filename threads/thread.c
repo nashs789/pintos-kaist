@@ -349,7 +349,7 @@ thread_yield (void) {
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
-		list_insert_ordered (&ready_list, &curr->elem, order_by_priority, NULL);
+		list_insert_ordered (&ready_list, &curr->elem, order_by_priority, 0);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -371,8 +371,9 @@ void cmp_priority(void){
 	struct thread *cur_t = thread_current();
 	struct thread *max_t = get_thread(list_begin(&ready_list));
 
-	if(!intr_context() && max_t->priority > cur_t->priority){ // 외부 인터럽트 컨텍스트가 아닌것을 확실시
-		thread_yield();
+	if(max_t->priority > cur_t->priority){ // 외부 인터럽트 컨텍스트가 아닌것을 확실시
+		if(!intr_context())
+			thread_yield();
 	}
 	/*
 	external interrupt가 processing 중에는 다른 작업들이 이뤄져서는 안 된다. 

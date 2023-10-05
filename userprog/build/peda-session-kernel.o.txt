@@ -1,2 +1,2 @@
-break sema_up
+break syscall.c:syscall_handler
 
