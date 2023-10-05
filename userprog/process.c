@@ -177,14 +177,6 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
-	// char *argv[64];
-    // char *token, *save_ptr;
-
-	// int count = 0;
-	// for (token = strtok_r (f_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
-	// 	argv[count++] = token;
-	char *nxt_ptr;
-
 	file_name = strtok_r(file_name, ' ', &nxt_ptr);
 
 	/* And then load the binary */
