@@ -483,9 +483,12 @@ void argument_stack(char **argv ,int argc ,struct intr_frame *if_){
 		addr[i] = (char*)if_->rsp;	
 	}
 	
-	while(if_->rsp % 8 != 0)
+	int count1 = 0;
+	while(if_->rsp % 8 != 0){
 		if_->rsp--;
-	memset(&if_->rsp,0,1);
+		count1++;
+	}
+	memset(if_->rsp,0,count1); //*
 
 	for(int i = argc; i >=0; i--){
 		if_->rsp = if_->rsp - 8;
@@ -504,7 +507,7 @@ void argument_stack(char **argv ,int argc ,struct intr_frame *if_){
 	if_->R.rdi = argc;
 	if_->R.rsi = if_->rsp + 8; //
 
-	hex_dump((uintptr_t)if_->rsp, if_->rsp, USER_STACK - (uintptr_t)if_->rsp, true);
+	hex_dump(if_->rsp, if_->rsp, USER_STACK - if_->rsp, true);
 }
 
 
