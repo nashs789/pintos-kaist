@@ -8,8 +8,14 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 
+
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+
+void halt(void);
+void exit(int status);
+void check_address(void *addr);
+bool create (const char *file, unsigned initial_size) ;
 
 /* System call.
  *
@@ -42,19 +48,59 @@ void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
 	
-	// switch (f->R.rax)
-	// {
-	// case 1:
-	// 	halt()
-	// 	break;
-	// case 2:
-		
-	
-	// default:
-	// 	break;
-	// }
+	switch (f->R.rax)
+	{
+	case SYS_HALT:
+		halt();
+		break;
+	case SYS_EXIT:
+		exit(f->R.rdi);
+		break;
+	case SYS_CREATE:
+		create(f->R.rdi, f->R.rsi);
+		break;
+	case SYS_WRITE:
+		putbuf(f->R.rsi,f->R.rdx);
+		break;
+	default:
+		break;
+	}
 
-	printf("\nsystem call!\n");
+	// printf("system call!\n");
 
-	thread_exit ();
+	// thread_exit ();
+}
+
+void check_address(void *addr) {
+	struct thread *t = thread_current();
+	/* --- Project 2: User memory access --- */
+	// if (!is_user_vaddr(addr)||addr == NULL) 
+	//-> 이 경우는 유저 주소 영역 내에서도 할당되지 않는 공간 가리키는 것을 체크하지 않음. 그래서 
+	// pml4_get_page를 추가해줘야!
+	if (!is_user_vaddr(addr) || addr == NULL){
+		exit(-1);
+	}
+}
+
+void halt(){
+	power_off();
+}
+
+void exit(int status) { 
+	struct thread *cur = thread_current();
+	// cur->exit_status = status;
+	printf("%s: exit(%d)\n", cur->name, status);
+	thread_exit(); /* Thread를 종료시키는 함수 */
+}
+
+/* 파일 생성하는 시스템 콜 */
+bool create (const char *file, unsigned initial_size) {
+	/* 성공이면 true, 실패면 false */
+	check_address(file);
+	if (filesys_create(file, initial_size)) {
+		return true;
+	}
+	else {
+		return false;
+	}
 }

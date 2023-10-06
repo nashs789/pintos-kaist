@@ -100,6 +100,7 @@ struct thread {
 	struct list donations;				/* 나에게 기부 한 애들 리스트 */
 	struct list_elem d_elem;
 	int org_priority;					/* 도네이트 받기 전 원래 우선순위 */
+	int exit_status;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
