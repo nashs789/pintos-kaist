@@ -41,6 +41,7 @@ process_init (void) {
 tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
+	char * token, *last;
 	tid_t tid;
 
 	/* Make a copy of FILE_NAME.
@@ -51,7 +52,8 @@ process_create_initd (const char *file_name) {
 	strlcpy (fn_copy, file_name, PGSIZE);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	token = strtok_r(file_name, " ", &last);
+	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -208,6 +210,7 @@ process_wait (tid_t child_tid UNUSED) {
 
 	// while(1)
 		thread_sleep(100);
+	// while (1) {;}
 	return -1;
 }
 
@@ -439,39 +442,6 @@ done:
 	return success;
 }
 
-// void argument_stack(char **argv, int argc, struct intr_frame *if_) {
-//     char *addr[argc];
-
-//     // Step 1: Push argument strings and create pointers in reverse order
-//     for (int i = argc - 1; i >= 0; i--) {
-//         int arglen = strlen(argv[i]);
-//         if_->rsp = if_->rsp - (arglen + 1); // Move stack pointer down
-//         memcpy(if_->rsp, argv[i], arglen + 1); // Copy argument string
-//         addr[i] = (char *)if_->rsp; // Save pointer to the argument string
-//     }
-
-//     // Align the stack pointer to 8-byte boundary
-//     while (if_->rsp % 8 != 0)
-//         if_->rsp--;
-
-//     // Step 2: Push pointers to argument strings and argc
-//     for (int i = argc; i >= 0; i--) {
-//         if_->rsp = if_->rsp - 8; // Move stack pointer down by 8 bytes
-//         if (i == argc) {
-//             memset(if_->rsp, 0, sizeof(char **)); // Push a null pointer for argv[argc]
-//         } else {
-//             memcpy(if_->rsp, &addr[i], sizeof(char **)); // Push a pointer to the argument string
-//         }
-//     }
-
-//     // Push argc and argv (pointer to argv[0])
-//     if_->rsp = if_->rsp - 8; // Move stack pointer down by 8 bytes
-//     if_->R.rdi = argc; // Set argc
-//     if_->R.rsi = (uint64_t)if_->rsp + 8; // Set argv (pointer to argv[0])
-
-//     // Optional: Print the content of the user stack
-//     hex_dump((uintptr_t)if_->rsp, if_->rsp, USER_STACK - (uintptr_t)if_->rsp, true);
-// }
 
 void argument_stack(char **argv ,int argc ,struct intr_frame *if_){
 	char * addr[argc];

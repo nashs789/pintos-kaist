@@ -28,6 +28,9 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+#define FDT_PAGES 3  // pages to allocate for file descriptor tables
+#define FDCOUNT_LIMIT FDT_PAGES * (1<<9) // limit fdidx 
+
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -100,7 +103,6 @@ struct thread {
 	struct list donations;				/* 나에게 기부 한 애들 리스트 */
 	struct list_elem d_elem;
 	int org_priority;					/* 도네이트 받기 전 원래 우선순위 */
-	int exit_status;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -114,6 +116,10 @@ struct thread {
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
+
+	int exit_status;
+	struct file ** file_descriptor_table; //FDT
+	int fdidx; //fd index
 };
 
 /* If false (default), use round-robin scheduler.

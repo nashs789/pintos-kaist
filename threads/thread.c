@@ -234,6 +234,15 @@ thread_create (const char *name, int priority,
 
 	/* Initialize thread. */
 	init_thread (t, name, priority);
+
+	t->file_descriptor_table = palloc_get_multiple(PAL_ZERO, FDT_PAGES); //&&&
+	if(t->file_descriptor_table == NULL)
+		return TID_ERROR;
+
+	t->fdidx = 2; // 0은 stdin, 1은 stdout에 이미 할당
+	t->file_descriptor_table[0] = 1; // stdin 자리: 1 배정
+	t->file_descriptor_table[1] = 2; // stdout 자리: 2 배정
+
 	tid = t->tid = allocate_tid ();
 
 	/* Call the kernel_thread if it scheduled.
@@ -498,6 +507,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	lock_init(&t->wait_on_lock);
 	list_init(&t->donations);
+
+	t->exit_status = 0;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

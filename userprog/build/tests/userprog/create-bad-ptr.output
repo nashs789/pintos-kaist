@@ -13,7 +13,7 @@ Pintos booting with:
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
 Calibrating timer...  157,081,600 loops/s.
 hd0: unexpected interrupt
-hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:0: detected 329 sector (164 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1: unexpected interrupt
 hd1:0: detected 118 sector (59 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -23,21 +23,21 @@ Putting 'create-bad-ptr' into the file system...
 Executing 'create-bad-ptr':
 (create-bad-ptr) begin
 Page fault at 0x20101234: not present error reading page in kernel context.
-Interrupt 0x0e (#PF Page-Fault Exception) at rip=800421fe38
+Interrupt 0x0e (#PF Page-Fault Exception) at rip=8004220544
  cr2=0000000020101234 error=               0
 rax 0000000020101234 rbx 0000000000000000 rcx 0000000020101234 rdx 000000000000007e
-rsp 0000008004240e80 rbp 0000008004240ec0 rsi 0000000020101234 rdi 000000800423c038
-rip 000000800421fe38 r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
-r11 0000000000000206 r12 000000800421dec4 r13 0000000000000000 r14 0000000000000000
+rsp 0000008004244e80 rbp 0000008004244ec0 rsi 0000000020101234 rdi 0000008004240038
+rip 0000008004220544 r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000206 r12 000000800421df87 r13 0000000000000000 r14 0000000000000000
 r15 0000000000000000 rflags 00000202
 es: 001b ds: 001b cs: 0008 ss: 0010
 Kernel PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x8004218db8 0x800421dbfe 0x800421dd87 0x8004208f32 0x800420938a 0x800421e48a 0x800421e07c 0x800421df4c 0x800421ddfc 0x40001e 0x4000a6 0x400bb1.
+Call stack: 0x8004218e37 0x800421dca8 0x800421de31 0x8004208fb1 0x8004209409 0x800421eb96 0x800421e250 0x800421e00e 0x800421dea6 0x40001e 0x4000a6 0x400bb1.
 The `backtrace' program can make call stacks useful.
 Read "Backtraces" in the "Debugging Tools" chapter
 of the Pintos documentation for more information.
-Timer: 80 ticks
-Thread: 41 idle ticks, 34 kernel ticks, 5 user ticks
+Timer: 79 ticks
+Thread: 33 idle ticks, 39 kernel ticks, 7 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 88 reads, 275 writes
 hd1:0: 118 reads, 0 writes

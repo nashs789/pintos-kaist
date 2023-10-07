@@ -13,7 +13,7 @@ Pintos booting with:
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
 Calibrating timer...  157,081,600 loops/s.
 hd0: unexpected interrupt
-hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:0: detected 329 sector (164 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1: unexpected interrupt
 hd1:0: detected 123 sector (61 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -25,20 +25,24 @@ Executing 'write-normal':
 (write-normal) begin
 (write-normal) create "test.txt"
 (write-normal) open "test.txt"
-"KAIST is the first and top science and technology university in Korea.
- KAIST has been the gateway to advanced science and technology,
- innovation, and entrepreneurship, and our graduates have been key
- players behind Korea’ innovations. KAIST will continue to pursue
- advances in science and technology as well as the economic development
- of Korea and beyond." --KAIST(write-normal) write() returned 10 instead of 373: FAILED
-write-normal: exit(1)
-Execution of 'write-normal' complete.
-Timer: 100 ticks
-Thread: 55 idle ticks, 38 kernel ticks, 7 user ticks
+Page fault at 0x8: not present error reading page in kernel context.
+Interrupt 0x0e (#PF Page-Fault Exception) at rip=800421fd6f
+ cr2=0000000000000008 error=               0
+rax 0000000000000000 rbx 0000000000000000 rcx 000000800421fd54 rdx 0000000000000175
+rsp 0000008004244eb0 rbp 0000008004244ee0 rsi 0000000000405f40 rdi 0000000000000000
+rip 000000800421fd6f r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000202 r12 000000800421df87 r13 0000000000000000 r14 0000000000000000
+r15 0000000000000000 rflags 00000202
+es: 001b ds: 001b cs: 0008 ss: 0010
+Kernel PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x8004218e37 0x800421dca8 0x800421de31 0x8004208fb1 0x8004209409 0x800421e35c 0x800421e0c7 0x800421dea6 0x4000ee 0x400187 0x400c92.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 80 ticks
+Thread: 36 idle ticks, 39 kernel ticks, 5 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 144 reads, 297 writes
+hd0:1: 149 reads, 297 writes
 hd1:0: 123 reads, 0 writes
-Console: 1454 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1943 characters output
+Key
