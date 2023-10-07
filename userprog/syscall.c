@@ -9,7 +9,6 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 
-
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
@@ -26,6 +25,8 @@ int filesize(int fd);
 int read(int fd, void *buffer, unsigned size);
 void seek (int fd, unsigned position);
 void tell(int fd);
+tid_t fork(const char *thread_name, struct intr_frame *f);
+
 
 struct lock filesys_lock;
 
@@ -69,6 +70,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		break;
 	case SYS_EXIT:
 		exit(f->R.rdi);
+		break;
+	case SYS_FORK:
+		f->R.rax = fork(f->R.rdi,f);	
 		break;
 	case SYS_CREATE:
 		create(f->R.rdi, f->R.rsi);
@@ -144,28 +148,30 @@ void check_address(void *addr) {
 	// if (!is_user_vaddr(addr)||addr == NULL) 
 	//-> 이 경우는 유저 주소 영역 내에서도 할당되지 않는 공간 가리키는 것을 체크하지 않음. 그래서 
 	// pml4_get_page를 추가해줘야!
-	if (!is_user_vaddr(addr) || addr == NULL){
+	if (!is_user_vaddr(addr)||addr == NULL||pml4_get_page(t->pml4, addr)== NULL)
+	{
 		exit(-1);
 	}
 }
 
+// 핀토스를 끄는것
 void halt(){
-	power_off();
+	power_off(); 
 }
 
+//쓰레드 종료 -> 프로세스를 종료
 void exit(int status) { 
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
-	// cur->exit_status = status;
 	printf("%s: exit(%d)\n", cur->name, status);
-	thread_exit(); /* Thread를 종료시키는 함수 */
+	thread_exit();
 }
 
 /* 파일 생성하는 시스템 콜 */
 bool create (const char *file, unsigned initial_size) {
 	/* 성공이면 true, 실패면 false */
 	check_address(file);
-	if (filesys_create(file, initial_size)) {
+	if (filesys_create(file, initial_size)) { // 파일 이름과 사이즈를 받아 파일 생성
 		return true;
 	}
 	else {
@@ -197,6 +203,7 @@ int write(int fd, const void *buffer, unsigned size){
 		read_count = file_write(fileobj, buffer, size);
 		lock_release(&filesys_lock);
 	}
+	return read_count;
 }
 
 int open(const char *file){
@@ -305,4 +312,8 @@ void close(int fd){
 	if(file == NULL)
 		return;
 	file_close(file);
+}
+
+tid_t fork(const char *thread_name, struct intr_frame *f){
+	return process_fork(thread_name,f);
 }
