@@ -388,119 +388,77 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
-static bool
-load (const char *file_name, struct intr_frame *if_) {
-	struct thread *t = thread_current ();
-	struct ELF ehdr;
-	struct file *file = NULL;
-	off_t file_ofs;
-	bool success = false;
-	int i;
+int process_exec (void *f_name) {
+	char *file_name = f_name;
+	bool success;
+	int tok_cnt = 0;
+	char *token;
+	char *nxt_ptr;
+	char *args[64];
+	char *temp_argv[128] = {0,};
 
-  	char *argv[64];
-	char *token, *save_ptr;
+	/* We cannot use the intr_frame in the thread structure.
+	 * This is because when current thread rescheduled,
+	 * it stores the execution information to the member. */
+	struct intr_frame _if;
+	_if.ds = _if.es = _if.ss = SEL_UDSEG;
+	_if.cs = SEL_UCSEG;
+	_if.eflags = FLAG_IF | FLAG_MBS;
 
-	int argc = 0; 
-	for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
-		argv[argc++] = token;
+	/* We first kill the current context */
+	process_cleanup ();
 
-	file_name = argv[0];
+	/* And then load the binary */
+	token = strtok_r(file_name, SPACE, &nxt_ptr);
+	file_name = token;
 
-	/* Allocate and activate page directory. */
-	t->pml4 = pml4_create ();
-	if (t->pml4 == NULL)
-		goto done;
-	process_activate (thread_current ());
-
-	/* Open executable file. */
-	file = filesys_open (file_name);
-	if (file == NULL) {
-		printf ("load: %s: open failed\n", file_name);
-		goto done;
+	while(token){
+		token = strtok_r(NULL, SPACE, &nxt_ptr);
+		args[tok_cnt++] = token;
 	}
 
-	/* Read and verify executable header. */
-	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
-			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
-			|| ehdr.e_type != 2
-			|| ehdr.e_machine != 0x3E // amd64
-			|| ehdr.e_version != 1
-			|| ehdr.e_phentsize != sizeof (struct Phdr)
-			|| ehdr.e_phnum > 1024) {
-		printf ("load: %s: error loading executable\n", file_name);
-		goto done;
+	success = load(file_name, &_if);
+
+	char *sp = (char *)USER_STACK;
+
+	for (int i = tok_cnt - 2; i >= 0; i--){
+		int len = strlen(args[i]) + 1;
+
+		sp -= len;
+		memcpy(sp, args[i], len);
+		args[i] = sp;
+	}
+	
+	while ((unsigned int)sp % 16 != 0) {
+    	sp--;
+	}
+	//sp = (char *)(((uint64_t)sp) & ~0xf);
+
+	*sp = 0;
+
+	for (int i = tok_cnt - 2; i >= 0; i--){
+		sp -= 8;
+		*((uint64_t *)sp) = (uint64_t)args[i];
 	}
 
-	/* Read program headers. */
-	file_ofs = ehdr.e_phoff;
-	for (i = 0; i < ehdr.e_phnum; i++) {
-		struct Phdr phdr;
+	sp -= 8;
+	*sp = NULL;
+	sp += 8;
 
-		if (file_ofs < 0 || file_ofs > file_length (file))
-			goto done;
-		file_seek (file, file_ofs);
+	_if.R.rdi = tok_cnt;
+	_if.R.rsi = (char *) sp;
+	_if.rsp = sp;
 
-		if (file_read (file, &phdr, sizeof phdr) != sizeof phdr)
-			goto done;
-		file_ofs += sizeof phdr;
-		switch (phdr.p_type) {
-			case PT_NULL:
-			case PT_NOTE:
-			case PT_PHDR:
-			case PT_STACK:
-			default:
-				/* Ignore this segment. */
-				break;
-			case PT_DYNAMIC:
-			case PT_INTERP:
-			case PT_SHLIB:
-				goto done;
-			case PT_LOAD:
-				if (validate_segment (&phdr, file)) {
-					bool writable = (phdr.p_flags & PF_W) != 0;
-					uint64_t file_page = phdr.p_offset & ~PGMASK;
-					uint64_t mem_page = phdr.p_vaddr & ~PGMASK;
-					uint64_t page_offset = phdr.p_vaddr & PGMASK;
-					uint32_t read_bytes, zero_bytes;
-					if (phdr.p_filesz > 0) {
-						/* Normal segment.
-						 * Read initial part from disk and zero the rest. */
-						read_bytes = page_offset + phdr.p_filesz;
-						zero_bytes = (ROUND_UP (page_offset + phdr.p_memsz, PGSIZE)
-								- read_bytes);
-					} else {
-						/* Entirely zero.
-						 * Don't read anything from disk. */
-						read_bytes = 0;
-						zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
-					}
-					if (!load_segment (file, file_page, (void *) mem_page,
-								read_bytes, zero_bytes, writable))
-						goto done;
-				}
-				else
-					goto done;
-				break;
-		}
-	}
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
-	/* Set up stack. */
-	if (!setup_stack (if_))
-		goto done;
+	/* If load failed, quit. */
+	palloc_free_page (file_name);
+	if (!success)
+		return -1;
 
-	/* Start address. */
-	if_->rip = ehdr.e_entry;
-
-	/* TODO: Your code goes here.
-	 * TODO: Implement argument passing (see project2/argument_passing.html). */
-	argument_stack(argv,argc,if_);
-
-	success = true;
-
-done:
-	/* We arrive here whether the load is successful or not. */
-	file_close (file);
-	return success;
+	/* Start switched process. */
+	do_iret (&_if);
+	NOT_REACHED ();
 }
 
 
